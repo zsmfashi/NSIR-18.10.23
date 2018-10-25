@@ -66,15 +66,15 @@ void Network::test()
             }
 
             printf("Input Data: ");
-            while (1)
+            if (1)
             {
                 //scanf("%s", &SendBuffer);
 
                 // 发送数据至服务器
                 SendBuffer[0] = 'd';
                 ret = send(ClientSocket,
-                    SendBuffer,
-                    (int)strlen(SendBuffer), // 返回发送缓冲区数据长度
+                    "SendBuffer",
+                    (int)strlen("SendBuffer"), // 返回发送缓冲区数据长度
                     0);
 
                 if (ret == SOCKET_ERROR)
