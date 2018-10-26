@@ -5,6 +5,7 @@
 #include<winsock2.h>
 #include<QString>
 
+
 class Network
 {
 public:
@@ -17,6 +18,10 @@ public:
     int request_decet(QString _dir,QString command);
 
     int send_check(int ret);
+
+    int send_file(QString _dir,QString upload_dir,QString filename);
+
+    int download_file(QString download_dir,QString filename);
 
 public:
     SOCKET ClientSocket;

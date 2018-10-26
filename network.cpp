@@ -2,6 +2,9 @@
 #include <Windows.h>
 #include <network.h>
 #include <string.h>
+#include <io.h>
+#include<QFile>
+#include<QDataStream>
 
 #pragma comment(lib, "ws2_32.lib")
 #define Port 5000
@@ -15,17 +18,13 @@ Network::Network()
 int Network::init(QString IP,QString port)
 {
     WSADATA s; // 用来储存调用AfxSocketInit全局函数返回的Windows Sockets初始化信息
-
     // 初始化Windows Socket
-    // WSAStartup函数对Winsock服务的初始化
     if (WSAStartup(MAKEWORD(2, 2), &s) != 0) // 通过连接两个给定的无符号参数,首个参数为低字节
     {
         qDebug() << "Init Windows Socket Failed! Error: \n";
         getchar();
     }
     // 创建一个套接口
-    // 如果这样一个套接口用connect()与一个指定端口连接
-    // 则可用send()和recv()与该端口进行数据报的发送与接收
     // 当会话结束后，调用closesocket()
     ClientSocket = socket(AF_INET, // 只支持ARPA Internet地址格式
     SOCK_STREAM, // 新套接口的类型描述
@@ -72,6 +71,67 @@ int Network::send_check(int ret)
         qDebug() << "send success";
         return 0;
     }
+}
+
+int Network::send_file(QString _dirt,QString upload_dirt,QString filenamet)
+{
+    _dirt = "horses.jpg";
+    char* _dir;
+    QByteArray temp = _dirt.toLatin1();
+    _dir = temp.data();
+
+    FILE *file;
+    file = fopen("C:/Users/Administrator/Desktop/test/project/NSIR/NSIR/test.jpg","rb");
+    if(file == NULL)
+    {
+        qDebug() << "无法打开文件";
+        //return -1;
+    }
+
+    int filesize = filelength(fileno(file));
+    QString filesize_c = QString::number(filesize);
+    qDebug() << filesize_c;
+
+    QString qrequest;
+    char* request;
+    qrequest = "UPLOAD|" + upload_dirt + "|" + filenamet + "|" + filesize_c + "|";
+    QByteArray temp2 = qrequest.toLatin1();
+    request = temp2.data();
+    qDebug() << request;
+
+    int ret = 0;
+    int timeout = 5000;//..毫秒后超时
+    int echo = 0;
+    char RecvBuffer[8];
+    ret = send(ClientSocket,request,strlen(request),0);
+    setsockopt(ClientSocket,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,sizeof(int));
+    echo = recv(ClientSocket,RecvBuffer,8,MSG_WAITALL);
+    qDebug() << RecvBuffer;
+
+    char* return_check = strtok(RecvBuffer,"|");
+    char* return_flag = strtok(NULL,"|");
+     if((strcmp(return_check,"SEND") == 0)&&(strcmp(return_flag,"1") == 0))
+    {
+        char buffer[1400];
+        int per_size = 0;
+         while(1)
+         {
+            per_size = fread(buffer,sizeof(char),1400,file);
+            send(ClientSocket, (char*)buffer, per_size, 0);
+            if(per_size < 1400)
+            {
+                break;
+            }
+            Sleep(1);
+         }
+    }
+    echo = recv(ClientSocket,RecvBuffer,7,MSG_WAITALL);//收上传完成回执
+    char* return_finish = strtok(RecvBuffer,"|");
+    if(strcmp(return_finish,"FINISH") == 0)
+    {
+        return 0;
+    }
+    //以后加入如果错误重新传文件
 }
 
 int Network::request_decet(QString _dir,QString command)
