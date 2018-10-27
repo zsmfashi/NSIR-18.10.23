@@ -7,7 +7,6 @@
 	#include <string.h>
 	#include <errno.h>
 	#include <fstream>
-	#include <unistd.h>
 	using namespace std;
 
 	//#define _GLIBCXX_USE_CXX11_ABI 0
@@ -48,48 +47,31 @@
 		FILE *pic;
 		pic = fopen(filename,"rb");
 		char* flag;
-		flag = (char*)malloc(sizeof(char) * 50);
 		if(pic == NULL)
 		{
-			strcat(flag,"-1|");
+			flag = "-1|";
 		}
 		else
 		{
-			strcat(flag,"0|");
+			flag = "0|";
 			int filesize;
 			fseek(pic, 0L, SEEK_END);  
 			filesize = ftell(pic);  
-			char *filesize_c;
-			filesize_c = (char*)malloc(sizeof(char) * 30);
+			char filesize_c[30];
+			printf("%d\n",filesize); //debug
+			printf("3\n"); //debug
 			sprintf(filesize_c,"%d",filesize);
+			printf("%s\n",filesize_c); //debug
+			printf("1\n"); //debug
 			strcat(flag,filesize_c);
+			printf("2\n"); //debug
 			strcat(flag,"|");
 			printf("%s\n",flag);//debug
+			
 		}
-		fseek(pic, 0L, SEEK_SET);  
 		int ret1 = 0;
 		ret1 = send(client_socket,flag,strlen(flag),0);
-		char recv1[5];
-		int echo1 = 0;
-		struct timeval timeout={5,0};//5s
-		int set_ret=setsockopt(client_socket,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
-		echo1 = recv(client_socket,recv1,5,0);
-		char* return_check = strtok(recv1,"|");
-		if(strcmp(recv1,"SEND") == 0)
-		{
-			char buffer[1400];
-			int per_size = 0;
-			while(1)
-			{
-				per_size = fread(buffer,sizeof(char),1400,pic);
-				send(client_socket, (char*)buffer, per_size, 0);
-				if(per_size < 1400)
-				{
-					break;
-				}
-				usleep(1000);//1000微秒
-			}
-		}
+
 	}
 
 	int network::recv_file(char* _dir,char* filename,char* filesize_c)
@@ -102,7 +84,7 @@
 		FILE *new_pic;
 		char* flag;
 		new_pic = fopen(_dir,"wb+");
-		if(new_pic == NULL) 
+		if(new_pic == NULL)
 		{
 			flag = "SEND|-1|";
 		}
@@ -321,11 +303,11 @@
 	{
 		network ne;
 		
-		ne.init_listen();
-		ne.CheckBufSize();
-		ne.listen_run();
-		ne.filetest();
-		//ne.send_file("123","predictions.jpg");
+		//ne.init_listen();
+		//ne.CheckBufSize();
+		//ne.listen_run();
+		//ne.filetest();
+		ne.send_file("123","predictions.jpg");
 		
 		return 0;
 	}

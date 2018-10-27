@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[])
 {
-    //QApplication a(argc, argv);
+    QApplication a(argc, argv);
     //SettingWindow test;
     //test.show();
 
@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
     Network n;
     n.init("210.30.97.233","5000");
     //qDebug() << n.request_decet("data/dog.jpg","123");
-    n.send_file(":/../../../horses.jpg","data/","name.jpg");
-   // return a.exec();
+    //n.send_file(":/../../../horses.jpg","data/","name.jpg");
+    n.download_file("123","aaa.jpg");
+    return a.exec();
 }

@@ -5,6 +5,8 @@
 #include <io.h>
 #include<QFile>
 #include<QDataStream>
+#include<QDateTime>
+#include<QCoreApplication>
 
 #pragma comment(lib, "ws2_32.lib")
 #define Port 5000
@@ -73,6 +75,83 @@ int Network::send_check(int ret)
     }
 }
 
+QString Network::download_file(QString upload_dirt,QString filenamet)
+{
+    qint64 timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
+    QString file_name = filenamet.section('.',0,0);
+    QString ext_name = filenamet.section('.',1,1);
+    file_name = file_name +"_" + QString::number(timestamp);
+    QString filename = file_name + "." + ext_name;
+    QString current_path = qApp->applicationDirPath();
+    QString _dirt = current_path + "/temp/"+ filename;
+    while(1)
+    {
+        int place = _dirt.indexOf('/');
+        if(place == -1)
+        {
+            break;
+        }
+        _dirt.replace(place,1,"\\");
+    }
+    qDebug() << _dirt;
+    char*  _dir;
+    QByteArray temp = _dirt.toLatin1();
+    _dir=temp.data();
+    FILE *new_pic;
+    new_pic = fopen(_dir,"wb+");
+    if(new_pic == NULL)
+    {
+        return "-1";
+    }
+
+    QString qrequest1;
+    qrequest1 = "DOWNLOAD|" + upload_dirt + "|predictions." + ext_name + "|";
+    char*  request1;
+    QByteArray temp2 = qrequest1.toLatin1();
+    request1=temp2.data();
+    qDebug() << request1;
+    int ret1 = 0;
+    ret1 = send(ClientSocket,request1,strlen(request1),0);
+
+    int echo1 = 0;
+    char recv1[30];
+    echo1 = recv(ClientSocket,recv1,50,0);
+    recv1[echo1+1] = '\0';
+    qDebug() <<  recv1;
+    char* return_check = strtok(recv1,"|");
+    char* return_size = strtok(NULL,"|");
+    int filesize = atoi(return_size);
+    if((strcmp(return_check,"0") == 0))
+    {
+        int ret2 = 0;
+        ret2 = send(ClientSocket,"SEND|",5,0);
+        int nCount = 0;
+        char buffer[15000];
+        while(1)
+        {
+            nCount = recv(ClientSocket, buffer, 15000, 0);
+            if(nCount > 0)
+            {
+                fwrite(buffer, nCount, 1, new_pic);
+                filesize -= nCount;
+            }
+            else
+            {
+                break;
+            }
+            if(filesize <= 0)
+            {
+                break;
+            }
+        }
+    }
+    else
+    {
+        return "-1";
+    }
+    fclose(new_pic);
+}
+
 int Network::send_file(QString _dirt,QString upload_dirt,QString filenamet)
 {
     _dirt = "horses.jpg";
@@ -110,7 +189,7 @@ int Network::send_file(QString _dirt,QString upload_dirt,QString filenamet)
 
     char* return_check = strtok(RecvBuffer,"|");
     char* return_flag = strtok(NULL,"|");
-     if((strcmp(return_check,"SEND") == 0)&&(strcmp(return_flag,"1") == 0))
+     if((strcmp(return_check,"SEND") == 0)&&(strcmp(return_flag,"0") == 0))
     {
         char buffer[1400];
         int per_size = 0;
@@ -170,35 +249,4 @@ int Network::request_decet(QString _dir,QString command)
         qDebug() << "请求发出没有收到回信或出错";
         return 1;
     }
-}
-
-void Network::test()
-{
-        while (1)
-        {
-            // 发送数据至服务器
-            //SendBuffer[0] = 'd';
-            int ret = 0;
-            ret = send(ClientSocket,
-                "SendBuffer",
-                (int)strlen("SendBuffer"), // 返回发送缓冲区数据长度
-                0);
-
-            if (ret == SOCKET_ERROR)
-            {
-                printf("Send Information Failed! Error:%d\n", GetLastError());
-                getchar();
-                break;
-            }
-            else
-            {
-                qDebug() << "send success";
-            }
-
-            break;
-        }
-
-        // 关闭socket
-        closesocket(ClientSocket);
-    WSACleanup();
 }

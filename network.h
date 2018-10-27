@@ -13,15 +13,13 @@ public:
 
     int init(QString IP,QString port);
 
-    void test();
-
     int request_decet(QString _dir,QString command);
 
     int send_check(int ret);
 
     int send_file(QString _dir,QString upload_dir,QString filename);
 
-    int download_file(QString download_dir,QString filename);
+    QString download_file(QString download_dir,QString filename);
 
 public:
     SOCKET ClientSocket;

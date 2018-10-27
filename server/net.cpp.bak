@@ -83,6 +83,8 @@
 			{
 				per_size = fread(buffer,sizeof(char),1400,pic);
 				send(client_socket, (char*)buffer, per_size, 0);
+				printf("%x\n",buffer);
+				printf("%d\n",per_size);
 				if(per_size < 1400)
 				{
 					break;
