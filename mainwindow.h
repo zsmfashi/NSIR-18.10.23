@@ -25,6 +25,7 @@ public:
 
     QString cur_pic_dir;
 
+    Network ne;
     LoginWindow login_window;
 
 
@@ -33,6 +34,8 @@ private slots:
     void on_Pic_Button_clicked();
 
     void on_Start_Button_clicked();
+
+    void on_pushButton_clicked();
 
 private:
     Ui::MainWindow *ui;
