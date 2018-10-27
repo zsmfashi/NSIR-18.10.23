@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/file">
         <file>setting.ini</file>
-        <file>test.jpg</file>
     </qresource>
 </RCC>

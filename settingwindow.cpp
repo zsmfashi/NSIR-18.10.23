@@ -6,11 +6,11 @@ SettingWindow::SettingWindow(QWidget *parent) :
     ui(new Ui::SettingWindow)
 {
     ui->setupUi(this);
+    setFixedSize(this->width(), this->height());
     this->LoadSetting();
     ui->IP_Edit->setText(this->IP_addr);
-    ui->Usr_Edit->setText(this->UsrName);
     ui->Upload_Edit->setText(this->Upload_addr);
-    ui->Psd_Edit->setText(this->Passwd);
+    ui->Port_Edit->setText(this->Port);
     ui->Process_Edit->setText(this->Process_addr);
     ui->Command_Edit->setText(this->Command);
 }
@@ -28,7 +28,7 @@ int SettingWindow::LoadSetting()
     {
         qDebug()<<"Can't open Setting.ini"<<endl;
         this->ErrorWindow("无法打开配置文件！");
-        return 1;
+        return -1;
     }
     for(int i = 0; i < 6; i++)
     {
@@ -41,31 +41,24 @@ int SettingWindow::LoadSetting()
             this->IP_addr = ip_temp;
             qDebug() << ip_temp;
         }
-        else if (str.startsWith("User_Name="))
+        else if (str.startsWith("Port="))
         {
             int last = str.indexOf('\n');
-            QString name_temp(str.mid(10,last-10));
-            this->UsrName = name_temp;
+            QString name_temp(str.mid(5,last-5));
+            this->Port = name_temp;
             qDebug() << name_temp;
         }
-        else if (str.startsWith("Password="))
+        else if (str.startsWith("Upload_dir="))
         {
             int last = str.indexOf('\n');
-            QString passwd_temp(str.mid(9,last-9));
-            this->Passwd = passwd_temp;
-            qDebug() << passwd_temp;
-        }
-        else if (str.startsWith("Upload_address="))
-        {
-            int last = str.indexOf('\n');
-            QString up_temp(str.mid(15,last-15));
+            QString up_temp(str.mid(11,last-11));
             this->Upload_addr = up_temp;
             qDebug() << up_temp;
         }
-        else if (str.startsWith("Process_address="))
+        else if (str.startsWith("Process_dir="))
         {
             int last = str.indexOf('\n');
-            QString pro_temp(str.mid(16,last-16));
+            QString pro_temp(str.mid(12,last-12));
             this->Process_addr = pro_temp;
             qDebug() << pro_temp;
         }
@@ -78,15 +71,14 @@ int SettingWindow::LoadSetting()
         }
     }
     if(this->IP_addr.isEmpty()||
-       this->UsrName.isEmpty()||
-       this->Passwd.isEmpty()||
+       this->Port.isEmpty()||
        this->Upload_addr.isEmpty()||
        this->Process_addr.isEmpty()||
        this->Command.isEmpty()
        )
     {
         //ErrorWindow("配置文件错误！");
-        return 1;
+        return -1;
     }
     file.close();
     return 0;
@@ -96,8 +88,7 @@ void SettingWindow::SaveSetting()
 {
     this->InitSetting();
     this->IP_addr = ui->IP_Edit->text();
-    this->UsrName = ui->Usr_Edit->text();
-    this->Passwd = ui->Psd_Edit->text();
+    this->Port = ui->Port_Edit->text();
     this->Upload_addr = ui->Upload_Edit->text();
     this->Process_addr = ui->Process_Edit->text();
     this->Command = ui->Command_Edit->text();
@@ -112,14 +103,12 @@ void SettingWindow::SaveSetting()
 
     QTextStream txtOutput(&file);
     QString sip("IP_address=" + ui->IP_Edit->text());
-    QString sname("User_Name=" + ui->Usr_Edit->text());
-    QString spasswd("Password=" + ui->Psd_Edit->text());
-    QString sup("Upload_address=" + ui->Upload_Edit->text());
-    QString spr("Process_address=" + ui->Process_Edit->text());
+    QString sport("Port=" + ui->Port_Edit->text());
+    QString sup("Upload_dir=" + ui->Upload_Edit->text());
+    QString spr("Process_dir=" + ui->Process_Edit->text());
     QString scom("Command=" + ui->Command_Edit->text());
     txtOutput << sip << endl;
-    txtOutput << sname << endl;
-    txtOutput << spasswd << endl;
+    txtOutput << sport << endl;
     txtOutput << sup << endl;
     txtOutput << spr << endl;
     txtOutput << scom << endl;
@@ -131,17 +120,16 @@ void SettingWindow::SaveSetting()
 void SettingWindow::InitSetting()
 {
     this->IP_addr = "";
-    this->UsrName = "";
     this->Upload_addr = "";
     this->Process_addr = "";
     this->Command = "";
-    this->Passwd = "";
+    this->Port = "";
 }
 
 void SettingWindow::ErrorWindow(QString message)
 {
     QMessageBox::critical(0,
-    "critical message" , message,
+    "错误！" , message,
     QMessageBox::Ok | QMessageBox::Default ,
     0,0);
 }

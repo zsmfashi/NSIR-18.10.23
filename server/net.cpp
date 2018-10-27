@@ -28,7 +28,6 @@
 		int dect(char* _picture,char* command);
 		int recv_file(char* _dir,char* filename,char* filesize_c);
 		int send_file(char* _dir,char* filename);
-		int filetest();
 		void CheckBufSize();
 	};
 
@@ -40,7 +39,7 @@
 		{
 			printf("getsockopt error=%d(%s)!!!\n", errno, strerror(errno));
 		}
-		printf("OS default udp socket recv buff size is: %d\n", defRcvBufSize);
+		printf("OS default tcp socket recv buff size is: %d\n", defRcvBufSize);
 	}
 
 	int network::send_file(char* _dir,char* filename)//回执格式 0/-1（打开/未找到）|文件大小(字节)|
@@ -48,7 +47,7 @@
 		FILE *pic;
 		pic = fopen(filename,"rb");
 		char* flag;
-		flag = (char*)malloc(sizeof(char) * 50);
+		flag = (char*)malloc(sizeof(char) * 20);
 		if(pic == NULL)
 		{
 			strcat(flag,"-1|");
@@ -64,18 +63,21 @@
 			sprintf(filesize_c,"%d",filesize);
 			strcat(flag,filesize_c);
 			strcat(flag,"|");
-			printf("%s\n",flag);//debug
+			//printf("%s\n",flag);//debug
 		}
 		fseek(pic, 0L, SEEK_SET);  
 		int ret1 = 0;
-		ret1 = send(client_socket,flag,strlen(flag),0);
+		ret1 = send(client_socket,flag,15,0);
+		
+		//usleep(100000);
 		char recv1[5];
 		int echo1 = 0;
 		struct timeval timeout={5,0};//5s
 		int set_ret=setsockopt(client_socket,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
 		echo1 = recv(client_socket,recv1,5,0);
+		printf("echo1=%d\n",echo1);
 		char* return_check = strtok(recv1,"|");
-		if(strcmp(recv1,"SEND") == 0)
+		if(1)//strcmp(recv1,"SEND") == 0)
 		{
 			char buffer[1400];
 			int per_size = 0;
@@ -94,7 +96,7 @@
 
 	int network::recv_file(char* _dir,char* filename,char* filesize_c)
 	{
-		printf("receving file\n");
+		printf("Receving File.....\n");
 		int filesize = 0;
 		char* return_flag;
 		filesize = atoi(filesize_c);
@@ -139,21 +141,9 @@
 			}
 		}
 		fclose(new_pic);
-		//if检查文件正确，发送回执
+		//以后加if检查文件正确，发送回执
 		ret = send(client_socket,"FINISH|",7,0);
-		printf("file received!\n");//debug
-	}
-
-	int network::filetest()
-	{
-		FILE *pic;
-		if((pic = fopen("data/test.jpg","wb+")) == NULL)
-		{
-			printf("open failed");
-		}
-		fwrite("333", 1, strlen("333"), pic);
-		fclose(pic);
-		
+		printf("File Received!\n");
 	}
 
 	int network::dect(char* _picture,char* command)
@@ -209,7 +199,7 @@
 		}   
 		else
 		{
-			printf("Start listening on port:%d\n",SERVER_PORT);
+			printf("\033[32mStart listening on port:\033[0m%d\n",SERVER_PORT);
 		}
 	}
 
@@ -234,7 +224,6 @@
 			while(1)
 			{
 				bzero(Buffer,BUFFER_SIZE);
-				printf("listening!\n");
 				length = recv(client_socket,Buffer,BUFFER_SIZE, 0);
 				if (length < 0)
 				{
@@ -243,15 +232,16 @@
 				}
 				else if(length == 0)
 				{
-					printf("Client Closed!\n");
+					printf("\033[31mClient Closed!\033[0m\n");
 					return 0;
 				}
 				else if(Buffer && *Buffer != '\0')
 				{
-					printf("got a msg:%s\n",Buffer);//debug
+					printf("====================\n");
+					printf("\033[32mGot a msg from Client:\033[0m%s\n",Buffer);//debug
 					char* request;
 					request = strtok(Buffer,"|");
-					printf("REQUEST = %s\n",request);//debug
+					printf("REQUEST = \033[33m%s\033[0m\n",request);//debug
 					if(strcmp(request,"DETEC") == 0)
 					{
 						printf("enter area of detec\n");//debug
@@ -265,14 +255,16 @@
 						char *result;
 						if(dect(_dir,command) == 0)
 						{
-							result = "0";
+							result = "0|";
 						}
 						else
 						{
-							result = "1";
+							result = "1|";
 						}
 						int ret;
-						ret = send(client_socket,(char*)result,1,0);
+						ret = send(client_socket,result,2,0);
+						printf("%d\n",ret);
+						usleep(500000);
 					}
 					else if(strcmp(request,"UPLOAD") == 0)//请求格式： UPLOAD|目录|文件名.扩展名|文件大小(字节)|
 					{
@@ -282,10 +274,9 @@
 						_dir = strtok(NULL,"|");
 						filename = strtok(NULL,"|");
 						filesize_c = strtok(NULL,"|");
-						//printf("%s\n",Buffer);
-						printf("%s\n",_dir);
+						printf("Uploading to:%s",_dir);
 						printf("%s\n",filename);
-						printf("%s\n",filesize_c);//debug
+						printf("With a size of %s\n",filesize_c);
 						char* result;
 						if(recv_file(_dir,filename,filesize_c) == 0)
 						{
@@ -296,9 +287,7 @@
 							result = "1";
 						}
 						int ret;
-						ret = send(client_socket,(char*)result,1,0);
-						printf("========\n");//debug
-						printf("%s\n",result);//debug
+						//ret = send(client_socket,(char*)result,1,0);
 					}
 					else if(strcmp(request,"DOWNLOAD") == 0)//请求格式： DOWNLOAD|目录(暂时没用，但要有)|文件名| (默认输出predictions.* 扩展名会在客户端自己添加)
 					{
@@ -306,10 +295,23 @@
 						char* filename;
 						_dir = strtok(NULL,"|");
 						filename = strtok(NULL,"|");
-						printf("%s\n",_dir);
+						//printf("%s\n",_dir);
+						printf("Sending ");
 						printf("%s\n",filename);
 						send_file(_dir,filename);
 					}
+					else if(strcmp(request,"TEST") == 0)
+					{
+						int ret = 0;
+						ret = send(client_socket,"TEST|",5,0);
+						if (ret == 5)
+						{
+							printf("ECHO = TEST ...sent!\n");
+						}
+	
+					}
+					printf("\033[32mRequest Compeleted!\033[0m\n");
+					printf("====================\n");
 				}
 			}
 			close(client_socket);
@@ -320,12 +322,11 @@
 	int main() // (int argc, char* argv[])
 	{
 		network ne;
-		
 		ne.init_listen();
-		ne.CheckBufSize();
-		ne.listen_run();
-		ne.filetest();
-		//ne.send_file("123","predictions.jpg");
-		
+		while(1)
+		{
+			ne.CheckBufSize();
+			ne.listen_run();
+		}
 		return 0;
 	}

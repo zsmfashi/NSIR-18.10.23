@@ -7,6 +7,8 @@
 #include<QDataStream>
 #include<QDateTime>
 #include<QCoreApplication>
+#include<malloc.h>
+#include<memory.h>
 
 #pragma comment(lib, "ws2_32.lib")
 #define Port 5000
@@ -24,17 +26,16 @@ int Network::init(QString IP,QString port)
     if (WSAStartup(MAKEWORD(2, 2), &s) != 0) // 通过连接两个给定的无符号参数,首个参数为低字节
     {
         qDebug() << "Init Windows Socket Failed! Error: \n";
-        getchar();
     }
     // 创建一个套接口
     // 当会话结束后，调用closesocket()
+    //ClientSocket = (SOCKET)malloc(102400);
     ClientSocket = socket(AF_INET, // 只支持ARPA Internet地址格式
     SOCK_STREAM, // 新套接口的类型描述
     IPPROTO_TCP); // 套接口所用的协议
     if (ClientSocket == INVALID_SOCKET)
     {
         qDebug() << "Create Socket Failed! Error: %d\n";
-        getchar();
         return -1;
     }
     ClientAddr.sin_family = AF_INET;
@@ -50,7 +51,6 @@ int Network::init(QString IP,QString port)
     {
         qDebug() << "Socket Connect Failed! Error:%d\n";
         qDebug() << GetLastError();
-        getchar();
         return -1;
     }
     else
@@ -75,7 +75,7 @@ int Network::send_check(int ret)
     }
 }
 
-QString Network::download_file(QString upload_dirt,QString filenamet)
+QString Network::download_file(QString proc_dirt,QString filenamet)
 {
     qint64 timestamp = QDateTime::currentDateTime().toMSecsSinceEpoch();
     QString file_name = filenamet.section('.',0,0);
@@ -105,21 +105,27 @@ QString Network::download_file(QString upload_dirt,QString filenamet)
     }
 
     QString qrequest1;
-    qrequest1 = "DOWNLOAD|" + upload_dirt + "|predictions." + ext_name + "|";
+    qrequest1 = "DOWNLOAD|" + proc_dirt + "|predictions." + ext_name + "|";
     char*  request1;
     QByteArray temp2 = qrequest1.toLatin1();
     request1=temp2.data();
     qDebug() << request1;
     int ret1 = 0;
+
     ret1 = send(ClientSocket,request1,strlen(request1),0);
 
     int echo1 = 0;
-    char recv1[30];
-    echo1 = recv(ClientSocket,recv1,50,0);
-    recv1[echo1+1] = '\0';
+    char *recv1 = new char[2000];
+    //recv1 = (char*)malloc(sizeof(char) * 20);
+    memset(recv1,0,16);
+    echo1 = recv(ClientSocket,recv1,2000,0);
+    qDebug() << "echo1" << echo1;
+    //recv1[echo1+1] = '\0';
     qDebug() <<  recv1;
     char* return_check = strtok(recv1,"|");
     char* return_size = strtok(NULL,"|");
+    qDebug() << return_check;
+    qDebug() << return_size;
     int filesize = atoi(return_size);
     if((strcmp(return_check,"0") == 0))
     {
@@ -150,21 +156,22 @@ QString Network::download_file(QString upload_dirt,QString filenamet)
         return "-1";
     }
     fclose(new_pic);
+    return _dirt;
 }
 
 int Network::send_file(QString _dirt,QString upload_dirt,QString filenamet)
 {
-    _dirt = "horses.jpg";
+    _dirt = _dirt + "/" + filenamet;
     char* _dir;
     QByteArray temp = _dirt.toLatin1();
     _dir = temp.data();
 
     FILE *file;
-    file = fopen("C:/Users/Administrator/Desktop/test/project/NSIR/NSIR/test.jpg","rb");
+    file = fopen(_dir,"rb");
     if(file == NULL)
     {
         qDebug() << "无法打开文件";
-        //return -1;
+        return -2;
     }
 
     int filesize = filelength(fileno(file));
@@ -173,7 +180,7 @@ int Network::send_file(QString _dirt,QString upload_dirt,QString filenamet)
 
     QString qrequest;
     char* request;
-    qrequest = "UPLOAD|" + upload_dirt + "|" + filenamet + "|" + filesize_c + "|";
+    qrequest = "UPLOAD|" + upload_dirt + "/|" + filenamet + "|" + filesize_c + "|";
     QByteArray temp2 = qrequest.toLatin1();
     request = temp2.data();
     qDebug() << request;
@@ -182,7 +189,9 @@ int Network::send_file(QString _dirt,QString upload_dirt,QString filenamet)
     int timeout = 5000;//..毫秒后超时
     int echo = 0;
     char RecvBuffer[8];
-    ret = send(ClientSocket,request,strlen(request),0);
+    ret = send(ClientSocket,request,100,0);
+    qDebug() << GetLastError();
+
     setsockopt(ClientSocket,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,sizeof(int));
     echo = recv(ClientSocket,RecvBuffer,8,MSG_WAITALL);
     qDebug() << RecvBuffer;
@@ -210,12 +219,13 @@ int Network::send_file(QString _dirt,QString upload_dirt,QString filenamet)
     {
         return 0;
     }
+    return -1;
     //以后加入如果错误重新传文件
 }
 
-int Network::request_decet(QString _dir,QString command)
+int Network::request_decet(QString _dirfile,QString command)
 {
-    QString buffer("DETEC|" + _dir + "|" + command + "|");
+    QString buffer("DETEC|" + _dirfile + "|" + command + "|");
     QByteArray temp = buffer.toLatin1();
     char *SendBuffer = temp.data();
     int ret = 0;
@@ -225,16 +235,17 @@ int Network::request_decet(QString _dir,QString command)
         return send_check(ret);
     }
     int echo = 0;
-    char RecvBuffer[10];
+    char RecvBuffer[1];
     //RecvBuffer = (char*)malloc(sizeof(char) * BufferSize);//为接收缓冲区分配内存
     int timeout = 60000;//..毫秒后超时
     setsockopt(ClientSocket,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,sizeof(int));
-    echo = recv(ClientSocket,RecvBuffer,1,0);//recv默认阻塞模式
-    RecvBuffer[echo]='\0';
+    echo = recv(ClientSocket,RecvBuffer,2,0);//recv默认阻塞模式
+   // RecvBuffer[echo]='\0';
+    char* return_flag = strtok(RecvBuffer,"|");
     if(echo >= 0)
     {
-        qDebug() << "got from server:" << RecvBuffer;
-        if(strcmp(RecvBuffer,"0") == 0)
+        qDebug() << "got from server:" << return_flag;
+        if(strcmp(return_flag,"0") == 0)
         {
             qDebug() << "success";
             return 0;
@@ -249,4 +260,28 @@ int Network::request_decet(QString _dir,QString command)
         qDebug() << "请求发出没有收到回信或出错";
         return 1;
     }
+}
+
+int Network::testing()
+{
+    char* test = "TEST|";
+    int ret1 = 0;
+    ret1 = send(ClientSocket,test,5,0);
+    int echo = 0;
+    char recvtest[5];
+    int timeout = 5000;//..毫秒后超时
+    setsockopt(ClientSocket,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,sizeof(int));
+    echo = recv(ClientSocket,recvtest,5,0);
+    qDebug() << recvtest;
+    char* return_flag = strtok(recvtest,"|");
+    if(strcmp(return_flag,"TEST") == 0)
+    {
+        return 0;
+    }
+    return -1;
+}
+
+int Network::closes()
+{
+    closesocket(ClientSocket);
 }

@@ -31,13 +31,15 @@ SOURCES += \
         mainwindow.cpp \
     settingwindow.cpp \
     loginwindow.cpp \
-    network.cpp
+    network.cpp \
+    thread.cpp
 
 HEADERS += \
         mainwindow.h \
     settingwindow.h \
     loginwindow.h \
-    network.h
+    network.h \
+    thread.h
 
 FORMS += \
         mainwindow.ui \
@@ -49,5 +51,4 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-RESOURCES += \
-    resource.qrc
+RESOURCES +=

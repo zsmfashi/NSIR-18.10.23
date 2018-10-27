@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>306</width>
-    <height>275</height>
+    <width>307</width>
+    <height>227</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -19,8 +19,8 @@
   <widget class="QPushButton" name="Confirm_PushButton">
    <property name="geometry">
     <rect>
-     <x>105</x>
-     <y>230</y>
+     <x>110</x>
+     <y>190</y>
      <width>93</width>
      <height>28</height>
     </rect>
@@ -48,7 +48,7 @@
      <x>20</x>
      <y>40</y>
      <width>81</width>
-     <height>171</height>
+     <height>141</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -60,16 +60,9 @@
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>用户名:</string>
-      </property>
-     </widget>
-    </item>
-    <item>
      <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>密码：</string>
+       <string>端口：</string>
       </property>
      </widget>
     </item>
@@ -101,8 +94,8 @@
     <rect>
      <x>110</x>
      <y>40</y>
-     <width>173</width>
-     <height>171</height>
+     <width>171</width>
+     <height>141</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -110,10 +103,7 @@
      <widget class="QLineEdit" name="IP_Edit"/>
     </item>
     <item>
-     <widget class="QLineEdit" name="Usr_Edit"/>
-    </item>
-    <item>
-     <widget class="QLineEdit" name="Psd_Edit"/>
+     <widget class="QLineEdit" name="Port_Edit"/>
     </item>
     <item>
      <widget class="QLineEdit" name="Upload_Edit"/>

@@ -19,11 +19,14 @@ class SettingWindow : public QWidget
 
 public:
     QString IP_addr;
-    QString UsrName;
-    QString Passwd;
+    QString Port;
     QString Upload_addr;
     QString Process_addr;
     QString Command;
+
+    QString filename;
+    QString filedir;
+    QString filesaved;
 
 public:
     explicit SettingWindow(QWidget *parent = nullptr);
