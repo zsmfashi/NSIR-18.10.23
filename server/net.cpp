@@ -29,6 +29,67 @@
 		int recv_file(char* _dir,char* filename,char* filesize_c);
 		int send_file(char* _dir,char* filename);
 		void CheckBufSize();
+		/*----------------------------------------------------------------------------------------------------------------------------------*/
+		/*  使用 g++编译即可，默认需要运行在darknet根目录
+			程序目前为单线程，一次只能处理一个请求。
+			SERVER_PORT为监听端口。
+			BUFFER_SIZE为缓存大小，发送大文件时缓存大小设置为客户端的10倍以上时可以减少传输错误。
+			
+
+
+			init_listen() 初始化socket
+
+
+			listen_run() 
+				监听端口，处理客户端发来的请求
+
+				请求格式：(字符串)
+					请求上传： UPLOAD|目录|文件名.扩展名|文件大小(字节)|
+					请求检测： DETEC|目录/文件名.扩展名|请求命令(暂时没用,但要有,默认命令写在了dect()里)|
+					请求下载： DOWNLOAD|目录(暂时没用,但要有,因为darknet默认输出根目录)|文件名(默认输出predictions.* 扩展名会在客户端自动添加)|
+					请求测试网络： TEST|
+
+
+			dect(char* _picture,char* command) 
+				运行程序，检测目标图片.
+					_picture 为目标文件：目录/文件名.扩展名
+					command 为运行命令，暂时无用
+
+				运行结束后会给客户端发送回执：
+							成功为: 0|
+							失败为 :1|
+
+
+			recv_file(char* _dir,char* filename,char* filesize_c) 
+				接收文件
+					_dir为存放目录，最后一个字符需要有 '/',例如 data/
+					filename为存放文件名： 文件名.扩展名
+					filesize_c 为文件大小，暂时没有用到
+					**目录不存在不会自动创建
+				工作流程
+					1.服务端接到"UPLOAD"请求，打开或创建准备写入的文件
+					2.打开成功/失败，返回回执：SEND|0|或是SEND|-1|
+					3.开始接受文件
+					4.发送完成回执：FINISH|
+
+
+			send_file(char* _dir,char* filename);
+				发送文件
+					_dir为目录，暂时没用
+					filename为文件名：文件名.扩展名。客户端发过来之前会自动改为：predictions.扩展名
+				工作流程
+					1.接到DOWNLOAD请求，打开准备发送的文件
+					2.打开成功/失败，发送回执 ：0/-1（打开/未找到）|文件大小(字节)|
+					3.收到客户端回执： SEND|   ,开始发送
+
+
+			CheckBufSize();
+				检测当前系统socket缓存大小
+	
+
+		*/
+		/*-----------------------------------------------------------------------------------------------------------------------------------*/
+
 	};
 
 	void network::CheckBufSize()
@@ -42,7 +103,7 @@
 		printf("OS default tcp socket recv buff size is: %d\n", defRcvBufSize);
 	}
 
-	int network::send_file(char* _dir,char* filename)//回执格式 0/-1（打开/未找到）|文件大小(字节)|
+	int network::send_file(char* _dir,char* filename)
 	{
 		FILE *pic;
 		pic = fopen(filename,"rb");
@@ -70,8 +131,6 @@
 		fseek(pic, 0L, SEEK_SET);  
 		int ret1 = 0;
 		ret1 = send(client_socket,flag,15,0);
-		
-		//usleep(100000);
 		char recv1[5];
 		int echo1 = 0;
 		struct timeval timeout={5,0};//5s
@@ -79,11 +138,9 @@
 		int set_ret=setsockopt(client_socket,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
 		
 		echo1 = recv(client_socket,recv1,5,0);
-		printf("echo1=%d\n",echo1);
-		printf("errno=%d\n",errno);
 		char* return_check = strtok(recv1,"|");
 		printf("2\n");
-		if(1)//strcmp(recv1,"SEND") == 0)
+		if(strcmp(recv1,"SEND") == 0)
 		{
 			char buffer[1400];
 			int per_size = 0;
@@ -120,7 +177,7 @@
 		}
 		int ret = 0;
 		ret = send(client_socket,flag,8,0);
-		//加一个检查发送
+		//以后再加一个检查发送
 
 		char *buffer;
 		buffer = (char*)malloc(sizeof(char) * filesize);
@@ -135,7 +192,6 @@
 			{
 				fwrite(buffer, nCount, 1, new_pic);
 				filesize -= nCount;
-				//printf("%d\n",nCount);//debug
 			}
 			else
 			{
@@ -244,20 +300,16 @@
 				else if(Buffer && *Buffer != '\0')
 				{
 					printf("====================\n");
-					printf("\033[32mGot a msg from Client:\033[0m%s\n",Buffer);//debug
+					printf("\033[32mGot a msg from Client:\033[0m%s\n",Buffer);
 					char* request;
 					request = strtok(Buffer,"|");
-					printf("REQUEST = \033[33m%s\033[0m\n",request);//debug
+					printf("REQUEST = \033[33m%s\033[0m\n",request);
 					if(strcmp(request,"DETEC") == 0)
 					{
-						printf("enter area of detec\n");//debug
 						char* _dir;
 						char* command;
 						_dir = strtok(NULL,"|");
 						command = strtok(NULL,"|");
-						printf("%s\n",_dir); //debug
-						printf("%s\n",command);//debug
-
 						char *result;
 						if(dect(_dir,command) == 0)
 						{
@@ -269,9 +321,9 @@
 						}
 						int ret;
 						ret = send(client_socket,result,2,0);
-						printf("%d\n",ret);
+						//printf("%d\n",ret);
 					}
-					else if(strcmp(request,"UPLOAD") == 0)//请求格式： UPLOAD|目录|文件名.扩展名|文件大小(字节)|
+					else if(strcmp(request,"UPLOAD") == 0)
 					{
 						char* _dir;
 						char* filename;
@@ -294,7 +346,7 @@
 						int ret;
 						//ret = send(client_socket,(char*)result,1,0);
 					}
-					else if(strcmp(request,"DOWNLOAD") == 0)//请求格式： DOWNLOAD|目录(暂时没用，但要有)|文件名| (默认输出predictions.* 扩展名会在客户端自己添加)
+					else if(strcmp(request,"DOWNLOAD") == 0)
 					{
 						char* _dir;
 						char* filename;
