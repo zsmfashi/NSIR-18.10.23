@@ -35,7 +35,7 @@ private slots:
 
     void on_Start_Button_clicked();
 
-    void on_pushButton_clicked();
+    void on_Check_Button_clicked();
 
 private:
     Ui::MainWindow *ui;

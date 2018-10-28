@@ -3,6 +3,7 @@
 #include <QTime>
 #include<QFileDialog>
 #include<QIcon>
+#include <QProcess>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -16,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->setupUi(this);
     setFixedSize(this->width(), this->height());
-
+    ui->Check_Button->setVisible(false);
 }
 
 MainWindow::~MainWindow()
@@ -50,13 +51,14 @@ void MainWindow::on_Pic_Button_clicked()
         qDebug() << this->login_window.setting_window.filename;
         this->login_window.setting_window.filedir = cur_pic_dir.replace(this->login_window.setting_window.filename,"");
         qDebug() << this->login_window.setting_window.filedir;
+        ui->Start_Button->setVisible(true);
+        ui->Check_Button->setVisible(false);
         ui->Start_Button->setEnabled(true);
     }
 }
 
 void MainWindow::on_Start_Button_clicked()
 {
-    ui->Pic_Button->setEnabled(false);
     ui->Start_Button->setEnabled(false);
     ui->Start_Button->setText("上传图片");
 
@@ -82,42 +84,50 @@ void MainWindow::on_Start_Button_clicked()
         this->login_window.connection->closes();
         delete(this->login_window.connection);
 
+        if(result2 == 0)
+        {
+            this->login_window.connection = new Network;
+            this->login_window.connection->init(this->login_window.IP,this->login_window.port);
+            QString result3 = this->login_window.connection->download_file("123",this->login_window.setting_window.filename);
+            this->login_window.connection->closes();
+            delete(this->login_window.connection);
+
+            this->login_window.setting_window.filesaved = result3;
+
+            if (result3 != "-1")
+            {
+                QImage Image;
+                Image.load(this->login_window.setting_window.filesaved);
+                QPixmap pixmap = QPixmap::fromImage(Image);
+                int with = ui->Pic_Button->width();
+                int height = ui->Pic_Button->height();
+                QPixmap fitpixmap = pixmap.scaled(with, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                ui->Pic_Button->setIconSize(ui->Pic_Button->rect().size());
+                ui->Pic_Button->setIcon(pixmap);
+            }
+        }
+
     }
-    ui->Pic_Button->setEnabled(true);
+
+    ui->Start_Button->setVisible(false);
+    ui->Check_Button->setVisible(true);
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_Check_Button_clicked()
 {
-    ui->Start_Button->setText("正在下载");
-    QString result3;
-
-    this->login_window.connection = new Network;
-    this->login_window.connection->init(this->login_window.IP,this->login_window.port);
-    result3 = this->login_window.connection->download_file("123",
-                                                          this->login_window.setting_window.filename);
-    this->login_window.connection->closes();
-    delete(this->login_window.connection);
-/*
-    Thread th;
-    th.run();
-    if(!th.isRunning())
+    QString current_path = qApp->applicationDirPath();
+    while(1)
     {
-        delaymsec(1000);
+        int place = current_path.indexOf('/');
+        if(place == -1)
+        {
+            break;
+        }
+        current_path.replace(place,1,"\\");
     }
-*/
-
-
-
-    if(result3 != "1")
-    {
-        this->login_window.setting_window.filesaved = result3;
-        QImage Image;
-        Image.load(this->login_window.setting_window.filesaved);
-        QPixmap pixmap = QPixmap::fromImage(Image);
-        int with = ui->Pic_Button->width();
-        int height = ui->Pic_Button->height();
-        QPixmap fitpixmap = pixmap.scaled(with, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        ui->Pic_Button->setIconSize(ui->Pic_Button->rect().size());
-        ui->Pic_Button->setIcon(pixmap);
-    }
+    current_path = current_path + "\\picture_viwer.exe";
+    qDebug() << current_path;
+    QProcess::startDetached(current_path);
+    delaymsec(3000);
+    QProcess::startDetached(current_path);
 }

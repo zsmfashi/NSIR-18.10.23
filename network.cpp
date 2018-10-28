@@ -11,8 +11,8 @@
 #include<memory.h>
 
 #pragma comment(lib, "ws2_32.lib")
-#define Port 5000
-#define IP_ADDRESS "210.30.97.233"
+//#define Port 5000
+//#define IP_ADDRESS "210.30.97.233"
 
 Network::Network()
 {
@@ -38,9 +38,13 @@ int Network::init(QString IP,QString port)
         qDebug() << "Create Socket Failed! Error: %d\n";
         return -1;
     }
+    char* ipc = new char[6];
+    QByteArray temp = IP.toLatin1();
+    ipc = temp.data();
+
     ClientAddr.sin_family = AF_INET;
-    ClientAddr.sin_addr.s_addr = inet_addr(IP_ADDRESS); // 定义IP地址
-    ClientAddr.sin_port = htons(Port); // 将主机的无符号短整形数转换成网络字节顺序
+    ClientAddr.sin_addr.s_addr = inet_addr(ipc); // 定义IP地址
+    ClientAddr.sin_port = htons(port.toInt()); // 将主机的无符号短整形数转换成网络字节顺序
     memset(ClientAddr.sin_zero, 0X00, 8); // 函数通常为新申请的内存做初始化工作
     int ret = 0;
     // 连接Socket
@@ -113,12 +117,12 @@ QString Network::download_file(QString proc_dirt,QString filenamet)
     int ret1 = 0;
 
     ret1 = send(ClientSocket,request1,strlen(request1),0);
-
     int echo1 = 0;
     char *recv1 = new char[2000];
     //recv1 = (char*)malloc(sizeof(char) * 20);
     memset(recv1,0,16);
     echo1 = recv(ClientSocket,recv1,2000,0);
+    qDebug()<<"last error" << GetLastError();
     qDebug() << "echo1" << echo1;
     //recv1[echo1+1] = '\0';
     qDebug() <<  recv1;

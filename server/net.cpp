@@ -46,15 +46,17 @@
 	{
 		FILE *pic;
 		pic = fopen(filename,"rb");
-		char* flag;
-		flag = (char*)malloc(sizeof(char) * 20);
+		char* flag = new char[50];
+		flag[0] = '\0';
+		//flag = (char*)malloc(sizeof(char) * 50);
 		if(pic == NULL)
 		{
-			strcat(flag,"-1|");
+			flag = "-1";
 		}
 		else
 		{
 			strcat(flag,"0|");
+			flag[2] = '\0';
 			int filesize;
 			fseek(pic, 0L, SEEK_END);  
 			filesize = ftell(pic);  
@@ -73,10 +75,14 @@
 		char recv1[5];
 		int echo1 = 0;
 		struct timeval timeout={5,0};//5s
+		extern int errno;
 		int set_ret=setsockopt(client_socket,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
+		
 		echo1 = recv(client_socket,recv1,5,0);
 		printf("echo1=%d\n",echo1);
+		printf("errno=%d\n",errno);
 		char* return_check = strtok(recv1,"|");
+		printf("2\n");
 		if(1)//strcmp(recv1,"SEND") == 0)
 		{
 			char buffer[1400];
@@ -264,7 +270,6 @@
 						int ret;
 						ret = send(client_socket,result,2,0);
 						printf("%d\n",ret);
-						usleep(500000);
 					}
 					else if(strcmp(request,"UPLOAD") == 0)//请求格式： UPLOAD|目录|文件名.扩展名|文件大小(字节)|
 					{
@@ -313,20 +318,24 @@
 					printf("\033[32mRequest Compeleted!\033[0m\n");
 					printf("====================\n");
 				}
+				break;
 			}
 			close(client_socket);
+			break;
 		}
 		close(server_socket);
 	}
 
 	int main() // (int argc, char* argv[])
 	{
-		network ne;
-		ne.init_listen();
+		network *ne;
 		while(1)
 		{
-			ne.CheckBufSize();
-			ne.listen_run();
+			ne = new network;
+			ne->init_listen();
+			ne->CheckBufSize();
+			ne->listen_run();
+			delete(ne);
 		}
 		return 0;
 	}
